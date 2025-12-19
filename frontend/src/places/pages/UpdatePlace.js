@@ -1,8 +1,9 @@
-import React, { use } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 //Components
 import Input from "../../shared/components/form-elements/input/Input";
 import Button from "../../shared/components/form-elements/button/Button";
+import Card from "../../shared/components/ui-elements/card/Card.js";
 // Hooks
 import { useFormReducer } from "../../helpers/custom-hooks/useFormReducer.js";
 //Validators
@@ -43,19 +44,37 @@ const PLACES = [
 ];
 
 const UpdatePlace = () => {
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
   // Get placeId from URL parameters
   const { placeId } = useParams();
+
+  const [formState, inputHandler, setFormData] = useFormReducer(
+    // Initial inputs state
+    {
+      title: { value: "", isValid: false }, // Title input
+      description: { value: "", isValid: false }, // Description input
+    },
+    false // Form is invalid initially
+  );
+
   // Find the place to be updated
   const identifiedPlace = PLACES.find((p) => p.id === placeId);
 
-  const [formState, inputHandler] = useFormReducer(
-    // Initial inputs state
-    {
-      title: { value: identifiedPlace.title, isValid: true },
-      description: { value: identifiedPlace.description, isValid: true },
-    },
-    true // Form is valid initially
-  );
+  useEffect(() => {
+    if (!identifiedPlace) {
+      return;
+    }
+    // Set form data with existing place details
+    setFormData(
+      {
+        title: { value: identifiedPlace.title, isValid: true },
+        description: { value: identifiedPlace.description, isValid: true },
+      },
+      true
+    );
+    setIsLoading(false); // Data is loaded
+  }, [setFormData, identifiedPlace]);
 
   const placeUpdateSubmitHandler = (event) => {
     event.preventDefault();
@@ -64,7 +83,23 @@ const UpdatePlace = () => {
 
   // If no place found, display message
   if (!identifiedPlace) {
-    return <h2>Could not find place!</h2>;
+    return (
+      <div className="center">
+        <Card>
+          <h2>Could not find place!</h2>
+        </Card>
+      </div>
+    );
+  }
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="center">
+        <Card>
+          <h2>Loading...</h2>
+        </Card>
+      </div>
+    );
   }
 
   return (

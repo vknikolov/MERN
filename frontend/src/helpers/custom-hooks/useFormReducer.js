@@ -10,6 +10,7 @@ const formReducer = (state, action) => {
       let formIsValid = true;
       // Iterate through all inputs to determine form validity
       for (const inputId in state.inputs) {
+        if (!state.inputs[inputId]) continue; // Skip if property is undefined for login/signup mode switch
         if (inputId === action.id) {
           // If this is the input being updated
           formIsValid = formIsValid && action.isValid; // Use the updated validity
@@ -24,6 +25,12 @@ const formReducer = (state, action) => {
           [action.id]: { value: action.value, isValid: action.isValid }, // Update the specific input
         },
         isValid: formIsValid,
+      };
+    // When setting form data programmatically
+    case "SET_DATA":
+      return {
+        inputs: action.inputs, // Set new inputs
+        isValid: action.formIsValid, // Set new overall form validity
       };
     default:
       return state;
@@ -41,6 +48,14 @@ export const useFormReducer = (initialInputs, initialFormValidity) => {
     // Dispatch an action to update the form state
     dispatch({ type: "INPUT_CHANGE", id: id, value: value, isValid: isValid });
   }, []);
+  // Function to set form data programmatically
+  const setFormData = useCallback((inputData, formValidity) => {
+    dispatch({
+      type: "SET_DATA",
+      inputs: inputData,
+      formIsValid: formValidity,
+    });
+  }, []);
   // Return the current form state and the input handler
-  return [formState, inputHandler];
+  return [formState, inputHandler, setFormData];
 };
