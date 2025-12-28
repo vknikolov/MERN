@@ -1,5 +1,7 @@
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
 
 // Routes
 const placesRoutes = require("./routes/places");
@@ -34,6 +36,15 @@ app.use((error, request, response, next) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+mongoose
+  .connect(
+    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@shop.p0nd9dc.mongodb.net/placesDB?appName=Shop`
+  )
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.log("Failed to connect to MongoDB", err);
+  });
