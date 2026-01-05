@@ -1,11 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState, useContext } from "react";
+import { useParams, useHistory } from "react-router-dom";
 //Components
 import Input from "../../shared/components/form-elements/input/Input";
 import Button from "../../shared/components/form-elements/button/Button";
 import Card from "../../shared/components/ui-elements/card/Card.js";
+import ErrorModal from "../../shared/components/ui-elements/error-modal/ErrorModal.js";
+import LoadingSpinner from "../../shared/components/ui-elements/spinner/LoadingSpinner.js";
 // Hooks
 import { useFormReducer } from "../../helpers/custom-hooks/useFormReducer.js";
+import { useHttpClient } from "../../helpers/custom-hooks/http.js";
+// Context
+import { AuthenticationContext } from "../../shared/context/authentication-context.js";
 //Validators
 import {
   VALIDATOR_REQUIRE,
@@ -14,41 +19,23 @@ import {
 // CSS
 import "./styles/PlaceForm.css";
 
-const PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "One of the most famous sky scrapers in the world!",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/d/da/At_New_York_City_2023_031_-_Empire_State_Building_seen_from_the_High_Line.jpg",
-    address: "20 W 34th St, New York, NY 10001, United States",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    creatorId: "u1",
-  },
-  {
-    id: "p2",
-    title: "Statue of Liberty",
-    description: "Famous colossal neoclassical sculpture on Liberty Island.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/8/8d/Statue_of_Liberty_Annular_Solar_Eclipse_%2851239095574%29.jpg",
-    address: "Liberty Island, New York, NY 10004, United States",
-    location: {
-      lat: 40.6892494,
-      lng: -74.0445004,
-    },
-    creatorId: "u2",
-  },
-];
-
 const UpdatePlace = () => {
-  // Loading state
-  const [isLoading, setIsLoading] = useState(true);
+  // Access authentication context to get User ID
+  const authenticationContext = useContext(AuthenticationContext);
+  
+  // useHttpClient for handling HTTP requests
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+
+  // State to hold loaded place
+  const [loadedPlace, setLoadedPlace] = useState();
+
   // Get placeId from URL parameters
   const { placeId } = useParams();
 
+  // History for navigation
+  const history = useHistory();
+
+  // useFormReducer for managing form state
   const [formState, inputHandler, setFormData] = useFormReducer(
     // Initial inputs state
     {
@@ -58,31 +45,64 @@ const UpdatePlace = () => {
     false // Form is invalid initially
   );
 
-  // Find the place to be updated
-  const identifiedPlace = PLACES.find((p) => p.id === placeId);
-
   useEffect(() => {
-    if (!identifiedPlace) {
-      return;
-    }
-    // Set form data with existing place details
-    setFormData(
-      {
-        title: { value: identifiedPlace.title, isValid: true },
-        description: { value: identifiedPlace.description, isValid: true },
-      },
-      true
-    );
-    setIsLoading(false); // Data is loaded
-  }, [setFormData, identifiedPlace]);
+    // Fetch place details to pre-fill the form
+    const fetchPlace = async () => {
+      try {
+        const data = await sendRequest(
+          `http://localhost:8080/api/places/${placeId}`
+        );
+        setLoadedPlace(data.place);
+        // Pre-fill the form with fetched data
+        setFormData(
+          {
+            title: { value: data.place.title, isValid: true },
+            description: { value: data.place.description, isValid: true },
+          },
+          true
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-  const placeUpdateSubmitHandler = (event) => {
+    fetchPlace();
+  }, [sendRequest, placeId, setFormData]);
+
+  // Form submission handler
+  const placeUpdateSubmitHandler = async (event) => {
     event.preventDefault();
-    console.log(formState.inputs); // Handle form submission
+    try {
+      await sendRequest(
+        `http://localhost:8080/api/places/${placeId}`,
+        "PATCH",
+        JSON.stringify({
+          title: formState.inputs.title.value,
+          description: formState.inputs.description.value,
+        }),
+        {
+          "Content-Type": "application/json",
+        }
+      );
+
+      // Navigate back to user's places after successful update
+      history.push(`/${authenticationContext.userID}/places`);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="center">
+        <LoadingSpinner asOverlay />
+      </div>
+    );
+  }
+
   // If no place found, display message
-  if (!identifiedPlace) {
+  if (!loadedPlace && !error) {
     return (
       <div className="center">
         <Card>
@@ -91,44 +111,39 @@ const UpdatePlace = () => {
       </div>
     );
   }
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="center">
-        <Card>
-          <h2>Loading...</h2>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <form className="place-form " onSubmit={placeUpdateSubmitHandler}>
-      <Input
-        id="title"
-        element="input"
-        type="text"
-        label="Title"
-        validators={[VALIDATOR_REQUIRE()]}
-        onInput={inputHandler}
-        onChange={() => {}}
-        initialValue={formState.inputs.title.value}
-        initialValid={formState.inputs.title.isValid}
-      />
-      <Input
-        id="description"
-        element="textarea"
-        label="Description"
-        validators={[VALIDATOR_MINLENGTH(5)]}
-        onInput={inputHandler}
-        onChange={() => {}}
-        initialValue={formState.inputs.description.value}
-        initialValid={formState.inputs.description.isValid}
-      />
-      <Button type="submit" disabled={!formState.isValid}>
-        UPDATE PLACE
-      </Button>
-    </form>
+    <>
+      <ErrorModal error={error} onClear={clearError} />
+      {!isLoading && loadedPlace && (
+        <form className="place-form " onSubmit={placeUpdateSubmitHandler}>
+          <Input
+            id="title"
+            element="input"
+            type="text"
+            label="Title"
+            validators={[VALIDATOR_REQUIRE()]}
+            onInput={inputHandler}
+            onChange={() => {}}
+            initialValue={loadedPlace.title}
+            initialValid={true}
+          />
+          <Input
+            id="description"
+            element="textarea"
+            label="Description"
+            validators={[VALIDATOR_MINLENGTH(5)]}
+            onInput={inputHandler}
+            onChange={() => {}}
+            initialValue={loadedPlace.description}
+            initialValid={true}
+          />
+          <Button type="submit" disabled={!formState.isValid}>
+            UPDATE PLACE
+          </Button>
+        </form>
+      )}
+    </>
   );
 };
 

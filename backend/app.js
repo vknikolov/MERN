@@ -15,6 +15,26 @@ const PORT = 8080;
 // Middleware
 app.use(bodyParser.json());
 
+// CORS headers middleware to allow cross-origin requests
+app.use((request, response, next) => {
+  // Allow access from any origin
+  response.setHeader("Access-Control-Allow-Origin", "*");
+
+  // Allow specific headers in requests
+  response.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+
+  // Allow specific HTTP methods in requests
+  response.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PATCH, DELETE"
+  );
+  // Proceed to the next middleware or route handler
+  next();
+});
+
 // Use Routes
 app.use("/api/places", placesRoutes);
 app.use("/api/users", usersRoutes);
@@ -38,7 +58,7 @@ app.use((error, request, response, next) => {
 // Start the server
 mongoose
   .connect(
-    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@shop.p0nd9dc.mongodb.net/placesDB?appName=Shop`
+    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@shop.p0nd9dc.mongodb.net/mern?appName=Shop`
   )
   .then(() => {
     app.listen(PORT, () => {

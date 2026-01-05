@@ -104,7 +104,12 @@ const login = async (request, response, next) => {
   }
 
   // Handle user login logic here
-  response.status(200).json({ message: "User logged in successfully!" });
+  response
+    .status(200)
+    .json({
+      message: "User logged in successfully!",
+      user: existingUser.toObject({ getters: true }), // Convert Mongoose document to plain JS object and getters remove the _id field
+    });
 };
 
 // Export controller functions

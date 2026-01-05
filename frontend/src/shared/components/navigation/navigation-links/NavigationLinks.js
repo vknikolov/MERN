@@ -8,7 +8,7 @@ import { AuthenticationContext } from "../../../context/authentication-context.j
 import "./NavigationLinks.css";
 
 const NavigationLinks = () => {
-  const { isLoggedIn, logout } = useContext(AuthenticationContext);
+  const { isLoggedIn, logout, userID } = useContext(AuthenticationContext);
 
   return (
     <ul className="navigation-links">
@@ -19,7 +19,7 @@ const NavigationLinks = () => {
       </li>
       {isLoggedIn && (
         <li>
-          <NavLink to="/u1/places">My Places</NavLink>
+          <NavLink to={`/${userID}/places`}>My Places</NavLink>
         </li>
       )}
       {isLoggedIn && (

@@ -19,13 +19,16 @@ import { AuthenticationContext } from "./shared/context/authentication-context.j
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userID, setUserID] = useState(null);
 
-  const login = useCallback(() => {
+  const login = useCallback((userID) => {
     setIsLoggedIn(true);
+    setUserID(userID);
   }, []);
 
   const logout = useCallback(() => {
     setIsLoggedIn(false);
+    setUserID(null);
   }, []);
 
   let authenticatedRoutes;
@@ -66,7 +69,12 @@ const App = () => {
 
   return (
     <AuthenticationContext.Provider
-      value={{ isLoggedIn: isLoggedIn, login: login, logout: logout }}
+      value={{
+        isLoggedIn: isLoggedIn,
+        userID: userID,
+        login: login,
+        logout: logout,
+      }}
     >
       <Router>
         <MainNavigation />

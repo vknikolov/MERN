@@ -1,43 +1,57 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 // Components
 import PlaceList from "../components/place-list/PlaceList";
-
-const PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "One of the most famous sky scrapers in the world!",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/d/da/At_New_York_City_2023_031_-_Empire_State_Building_seen_from_the_High_Line.jpg",
-    address: "20 W 34th St, New York, NY 10001, United States",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    creatorId: "u1",
-  },
-  {
-    id: "p2",
-    title: "Statue of Liberty",
-    description: "Famous colossal neoclassical sculpture on Liberty Island.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/8/8d/Statue_of_Liberty_Annular_Solar_Eclipse_%2851239095574%29.jpg",
-    address: "Liberty Island, New York, NY 10004, United States",
-    location: {
-      lat: 40.6892494,
-      lng: -74.0445004,
-    },
-    creatorId: "u2",
-  },
-];
+import ErrorModal from "../../shared/components/ui-elements/error-modal/ErrorModal";
+import LoadingSpinner from "../../shared/components/ui-elements/spinner/LoadingSpinner";
+// Hooks
+import { useHttpClient } from "../../helpers/custom-hooks/http.js";
 
 const UserPlaces = () => {
+  // State to hold loaded places
+  const [loadedPlaces, setLoadedPlaces] = useState([]);
+
+  // useHttpClient for handling HTTP requests
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+
+  // Get userId from URL parameters
   const { userId } = useParams();
-  const filteredPlacesByUser = PLACES.filter(
-    (place) => place.creatorId === userId
+
+  useEffect(() => {
+    // Fetch places for the specific user
+    const fetchUserPlaces = async () => {
+      try {
+        const data = await sendRequest(
+          `http://localhost:8080/api/places/user/${userId}`
+        );
+        // Update state with fetched places
+        setLoadedPlaces(data.places);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchUserPlaces();
+  }, [sendRequest, userId]);
+
+  const placeDeleteHandler = (deletedPlaceId) => {
+    setLoadedPlaces((prevPlaces) =>
+      prevPlaces.filter((place) => place.id !== deletedPlaceId)
+    );
+  };
+
+  return (
+    <>
+      <ErrorModal error={error} onClear={clearError} />
+      {isLoading && (
+        <div className="center">
+          <LoadingSpinner asOverlay />
+        </div>
+      )}
+      {!isLoading && loadedPlaces && (
+        <PlaceList items={loadedPlaces} onDeletePlace={placeDeleteHandler} />
+      )}
+    </>
   );
-  return <PlaceList items={filteredPlacesByUser} />;
 };
 
 export default UserPlaces;

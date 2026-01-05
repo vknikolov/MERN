@@ -1,25 +1,44 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 // Components
 import UsersList from "../components/users-list/UsersList";
+import ErrorModal from "../../shared/components/ui-elements/error-modal/ErrorModal";
+import LoadingSpinner from "../../shared/components/ui-elements/spinner/LoadingSpinner";
+// Hooks
+import { useHttpClient } from "../../helpers/custom-hooks/http.js";
 
 const Users = () => {
-  const USERS = [
-    {
-      id: "u1",
-      name: "Max Schwarz",
-      image:
-        "https://upload.wikimedia.org/wikipedia/commons/e/e9/Tallinn_2016_-_-i---i-_%2831601942076%29.jpg",
-      places: 3,
-    },
-    {
-      id: "u2",
-      name: "Anna Müller",
-      image:
-        "https://upload.wikimedia.org/wikipedia/commons/f/fc/Place_Jeanne_d%27Arc_in_Neufchateau_%282%29.jpg",
-      places: 5,
-    },
-  ];
-  return <UsersList items={USERS} />;
+  // useHttpClient for handling HTTP requests
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+
+  // State to store loaded users
+  const [loadedUsers, setLoadedUsers] = useState([]);
+
+  useEffect(() => {
+    // Fetch users on component mount
+    const fetchUsers = async () => {
+      try {
+        // Send HTTP request to fetch users
+        const data = await sendRequest("http://localhost:8080/api/users");
+        setLoadedUsers(data.users);
+      } catch (error) {
+        // Error handling is managed in useHttpClient
+        console.error(error);
+      }
+    };
+    fetchUsers();
+  }, [sendRequest]);
+
+  return (
+    <>
+      {error && <ErrorModal onClear={clearError} message={error} />}
+      {isLoading && (
+        <div className="center">
+          <LoadingSpinner />
+        </div>
+      )}
+      {!isLoading && loadedUsers && <UsersList items={loadedUsers} />}
+    </>
+  );
 };
 
 export default Users;

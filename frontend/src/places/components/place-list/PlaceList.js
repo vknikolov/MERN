@@ -6,7 +6,7 @@ import Button from "../../../shared/components/form-elements/button/Button";
 import "./PlaceList.css";
 import PlaceItem from "../place-item/PlaceItem";
 
-const PlaceList = ({ items }) => {
+const PlaceList = ({ items, onDeletePlace }) => {
   if (items.length === 0) {
     return (
       <div className="place-list center">
@@ -24,12 +24,13 @@ const PlaceList = ({ items }) => {
         <PlaceItem
           key={place.id}
           id={place.id}
-          imageUrl={place.imageUrl}
+          imageUrl={place.image}
           title={place.title}
           description={place.description}
           address={place.address}
-          creatorId={place.creatorId}
+          creatorId={place.creator}
           coordinates={place.location}
+          onDelete={onDeletePlace}
         />
       ))}
     </ul>

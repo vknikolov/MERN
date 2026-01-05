@@ -3,6 +3,8 @@ import React, { useState, useContext } from "react";
 import Card from "../../shared/components/ui-elements/card/Card";
 import Button from "../../shared/components/form-elements/button/Button";
 import Input from "../../shared/components/form-elements/input/Input";
+import ErrorModal from "../../shared/components/ui-elements/error-modal/ErrorModal";
+import LoadingSpinner from "../../shared/components/ui-elements/spinner/LoadingSpinner";
 // Context
 import { AuthenticationContext } from "../../shared/context/authentication-context.js";
 // Validators
@@ -13,11 +15,12 @@ import {
 } from "../../helpers/utils/validators";
 // Hooks
 import { useFormReducer } from "../../helpers/custom-hooks/useFormReducer.js";
+import { useHttpClient } from "../../helpers/custom-hooks/http.js";
 // CSS
 import "./styles/Authentication.css";
 
 const Authentication = () => {
-  const { isLoggedIn, login, logout } = useContext(AuthenticationContext);
+  const { login } = useContext(AuthenticationContext);
 
   const [isLoginMode, setIsLoginMode] = useState(true);
   // useFormReducer for managing form state
@@ -28,11 +31,42 @@ const Authentication = () => {
     },
     false
   );
+
+  // useHttpClient for handling HTTP requests
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+
   // Form submission handler
-  const authSubmitHandler = (event) => {
+  const authSubmitHandler = async (event) => {
     event.preventDefault();
-    console.log(formState.inputs);
-    login()
+    const urlMode = isLoginMode ? "login" : "signup";
+    const bodyMode = isLoginMode
+      ? {
+          email: formState.inputs.email.value,
+          password: formState.inputs.password.value,
+        }
+      : {
+          name: formState.inputs.name.value,
+          email: formState.inputs.email.value,
+          password: formState.inputs.password.value,
+        };
+
+    try {
+      // Send HTTP request to backend
+      const data = await sendRequest(
+        `http://localhost:8080/api/users/${urlMode}`,
+        "POST",
+        JSON.stringify(bodyMode),
+        {
+          "Content-Type": "application/json",
+        }
+      );
+
+      // Log the user in upon successful authentication
+      login(data.user.id); // Assuming the response contains user ID
+    } catch (error) {
+      // Error is handled in useHttpClient
+      console.error(error);
+    }
   };
 
   // Switch mode handler (login/signup)
@@ -61,60 +95,65 @@ const Authentication = () => {
     }
     setIsLoginMode((prevMode) => !prevMode);
   };
+
   return (
-    <Card className="authentication">
-      <div className="authentication__header">
-        <h2>Login required</h2>
-      </div>
-      <hr />
-      <form onSubmit={authSubmitHandler}>
-        {!isLoginMode && (
+    <>
+      <ErrorModal error={error} onClear={clearError} />
+      <Card className="authentication">
+        {isLoading && <LoadingSpinner asOverlay />}
+        <div className="authentication__header">
+          <h2>Login required</h2>
+        </div>
+        <hr />
+        <form onSubmit={authSubmitHandler}>
+          {!isLoginMode && (
+            <Input
+              id="name"
+              element="input"
+              type="text"
+              label="Name"
+              validators={[VALIDATOR_REQUIRE()]}
+              errorText="Please enter your name."
+              onInput={inputHandler}
+              initialValue={
+                formState.inputs.name ? formState.inputs.name.value : ""
+              }
+              initialValid={
+                formState.inputs.name ? formState.inputs.name.isValid : false
+              }
+            />
+          )}
           <Input
-            id="name"
+            id="email"
             element="input"
-            type="text"
-            label="Name"
-            validators={[VALIDATOR_REQUIRE()]}
-            errorText="Please enter your name."
+            type="email"
+            label="E-Mail"
+            validators={[VALIDATOR_EMAIL()]}
+            errorText="Please enter a valid email address."
             onInput={inputHandler}
-            initialValue={
-              formState.inputs.name ? formState.inputs.name.value : ""
-            }
-            initialValid={
-              formState.inputs.name ? formState.inputs.name.isValid : false
-            }
+            initialValue={formState.inputs.email.value}
+            initialValid={formState.inputs.email.isValid}
           />
-        )}
-        <Input
-          id="email"
-          element="input"
-          type="email"
-          label="E-Mail"
-          validators={[VALIDATOR_EMAIL()]}
-          errorText="Please enter a valid email address."
-          onInput={inputHandler}
-          initialValue={formState.inputs.email.value}
-          initialValid={formState.inputs.email.isValid}
-        />
-        <Input
-          id="password"
-          element="input"
-          type="password"
-          label="Password"
-          validators={[VALIDATOR_MINLENGTH(6)]}
-          errorText="Please enter a valid password, at least 6 characters."
-          onInput={inputHandler}
-          initialValue={formState.inputs.password.value}
-          initialValid={formState.inputs.password.isValid}
-        />
-        <Button type="submit" disabled={!formState.isValid}>
-          {isLoginMode ? "LOGIN" : "SIGNUP"}
+          <Input
+            id="password"
+            element="input"
+            type="password"
+            label="Password"
+            validators={[VALIDATOR_MINLENGTH(6)]}
+            errorText="Please enter a valid password, at least 6 characters."
+            onInput={inputHandler}
+            initialValue={formState.inputs.password.value}
+            initialValid={formState.inputs.password.isValid}
+          />
+          <Button type="submit" disabled={!formState.isValid}>
+            {isLoginMode ? "LOGIN" : "SIGNUP"}
+          </Button>
+        </form>
+        <Button inverse onClick={switchModeHandler}>
+          SWITCH TO {isLoginMode ? "SIGNUP" : "LOGIN"}
         </Button>
-      </form>
-      <Button inverse onClick={switchModeHandler}>
-        SWITCH TO {isLoginMode ? "SIGNUP" : "LOGIN"}
-      </Button>
-    </Card>
+      </Card>
+    </>
   );
 };
 

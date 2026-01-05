@@ -1,23 +1,30 @@
-import React, { useState, useContext } from "react";
+import { useState, useContext } from "react";
 // Components
 import Card from "../../../shared/components/ui-elements/card/Card";
 import Button from "../../../shared/components/form-elements/button/Button";
 import Modal from "../../../shared/components/modal/Modal";
 import Map from "../../../shared/components/ui-elements/map/Map";
+import ErrorModal from "../../../shared/components/ui-elements/error-modal/ErrorModal.js";
+import LoadingSpinner from "../../../shared/components/ui-elements/spinner/LoadingSpinner.js";
+// Hooks
+import { useHttpClient } from "../../../helpers/custom-hooks/http.js";
 //Context
 import { AuthenticationContext } from "../../../shared/context/authentication-context.js";
 // CSS
 import "./PlaceItem.css";
 
 const PlaceItem = ({
+  id,
   address,
   imageUrl,
   title,
   description,
-  id,
+  creatorId,
   coordinates,
+  onDelete,
 }) => {
-  const { isLoggedIn } = useContext(AuthenticationContext);
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+  const { userID } = useContext(AuthenticationContext);
   const [showMap, setShowMap] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -25,16 +32,25 @@ const PlaceItem = ({
   const openMapHandler = () => setShowMap(true);
   const closeMapHandler = () => setShowMap(false);
 
-  // Confirm Delete Modal handlers
+  // Delete Confirmation Modal handlers
   const showConfirmModalHandler = () => setShowConfirmModal(true);
   const closeConfirmModalHandler = () => setShowConfirmModal(false);
-  const deletePlaceHandler = () => {
+
+  // Delete place handler
+  const deletePlaceHandler = async () => {
     console.log("DELETING...");
     closeConfirmModalHandler();
+    try {
+      await sendRequest(`http://localhost:8080/api/places/${id}`, "DELETE");
+      onDelete(id);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
     <>
+      <ErrorModal error={error} onClear={clearError} />
       <Modal
         show={showMap}
         onCancel={closeMapHandler}
@@ -69,6 +85,7 @@ const PlaceItem = ({
 
       <li className="place-item">
         <Card className="place-item__content">
+          {isLoading && <LoadingSpinner asOverlay />}
           <div className="place-item__image">
             <img src={imageUrl} alt={title} />
           </div>
@@ -81,8 +98,8 @@ const PlaceItem = ({
             <Button inverse onClick={openMapHandler}>
               VIEW PLACE ON MAP
             </Button>
-            {isLoggedIn && <Button to={`/places/${id}`}>EDIT</Button>}
-            {isLoggedIn && (
+            {userID === creatorId && <Button to={`/places/${id}`}>EDIT</Button>}
+            {userID === creatorId && (
               <Button danger onClick={showConfirmModalHandler}>
                 DELETE
               </Button>
