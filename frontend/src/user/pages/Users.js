@@ -18,7 +18,7 @@ const Users = () => {
     const fetchUsers = async () => {
       try {
         // Send HTTP request to fetch users
-        const data = await sendRequest("http://localhost:8080/api/users");
+        const data = await sendRequest(`${process.env.REACT_APP_BACKEND_URL}/users`);
         setLoadedUsers(data.users);
       } catch (error) {
         // Error handling is managed in useHttpClient

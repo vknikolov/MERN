@@ -16,7 +16,7 @@ const PORT = 8080;
 // Middleware
 app.use(bodyParser.json());
 
-// Serve static files from the "uploads/images" directory 
+// Serve static files from the "uploads/images" directory
 app.use("/uploads/images", express.static(path.join("uploads", "images")));
 
 // CORS headers middleware to allow cross-origin requests
@@ -69,7 +69,7 @@ app.use((error, request, response, next) => {
 // Start the server
 mongoose
   .connect(
-    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@shop.p0nd9dc.mongodb.net/mern?appName=Shop`
+    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@shop.p0nd9dc.mongodb.net/${process.env.DB_NAME}?appName=${process.env.DB_APP_NAME}`
   )
   .then(() => {
     app.listen(PORT, () => {

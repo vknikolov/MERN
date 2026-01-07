@@ -69,7 +69,7 @@ const NewPlace = () => {
       formData.append("image", formState.inputs.image.value);
 
       // Send HTTP request to backend to create a new place
-      await sendRequest("http://localhost:8080/api/places", "POST", formData, {
+      await sendRequest(`${process.env.REACT_APP_BACKEND_URL}/places`, "POST", formData, {
         Authorization: "Bearer " + token, // Auth header
       });
 

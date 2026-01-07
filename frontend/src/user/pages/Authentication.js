@@ -63,7 +63,7 @@ const Authentication = () => {
 
       // Send HTTP request to backend
       const data = await sendRequest(
-        `http://localhost:8080/api/users/${urlMode}`,
+        `${process.env.REACT_APP_BACKEND_URL}/users/${urlMode}`,
         "POST",
         isLoginMode ? JSONData : formData,
         headersMode

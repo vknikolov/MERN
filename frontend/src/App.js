@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 // React Router v5
 import {
   BrowserRouter as Router,
@@ -7,17 +7,31 @@ import {
   Switch,
 } from "react-router-dom";
 // Pages
-import Users from "./user/pages/Users";
-import NewPlace from "./places/pages/NewPlace";
-import UserPlaces from "./places/pages/UserPlaces";
-import UpdatePlace from "./places/pages/UpdatePlace.js";
+// import Users from "./user/pages/Users";
+// import NewPlace from "./places/pages/NewPlace";
+// import UserPlaces from "./places/pages/UserPlaces";
+// import UpdatePlace from "./places/pages/UpdatePlace.js";
 // Hooks
 import { useAuthentication } from "./helpers/custom-hooks/authentication-hook.js";
 // Components
 import MainNavigation from "./shared/components/navigation/main-navigation/MainNavigation.js";
-import Authentication from "./user/pages/Authentication.js";
+import LoadingSpinner from "./shared/components/ui-elements/spinner/LoadingSpinner.js";
+// import Authentication from "./user/pages/Authentication.js";
 // Context
 import { AuthenticationContext } from "./shared/context/authentication-context.js";
+
+// Lazy loaded components
+const Users = React.lazy(() => import("./user/pages/Users.js"));
+
+const NewPlace = React.lazy(() => import("./places/pages/NewPlace.js"));
+
+const UserPlaces = React.lazy(() => import("./places/pages/UserPlaces.js"));
+
+const UpdatePlace = React.lazy(() => import("./places/pages/UpdatePlace.js"));
+
+const Authentication = React.lazy(() =>
+  import("./user/pages/Authentication.js")
+);
 
 const App = () => {
   // Use custom authentication hook
@@ -72,7 +86,17 @@ const App = () => {
     >
       <Router>
         <MainNavigation />
-        <main>{authenticatedRoutes}</main>
+        <main>
+          <Suspense
+            fallback={
+              <div className="center">
+                <LoadingSpinner />
+              </div>
+            }
+          >
+            {authenticatedRoutes}
+          </Suspense>
+        </main>
       </Router>
     </AuthenticationContext.Provider>
   );
