@@ -20,9 +20,9 @@ import {
 import "./styles/PlaceForm.css";
 
 const UpdatePlace = () => {
-  // Access authentication context to get User ID
-  const authenticationContext = useContext(AuthenticationContext);
-  
+  // Get userID and token from AuthenticationContext
+  const { userID, token } = useContext(AuthenticationContext);
+
   // useHttpClient for handling HTTP requests
   const { isLoading, error, sendRequest, clearError } = useHttpClient();
 
@@ -82,11 +82,12 @@ const UpdatePlace = () => {
         }),
         {
           "Content-Type": "application/json",
+          Authorization: "Bearer " + token, // Auth header
         }
       );
 
       // Navigate back to user's places after successful update
-      history.push(`/${authenticationContext.userID}/places`);
+      history.push(`/${userID}/places`);
     } catch (error) {
       console.error(error);
     }

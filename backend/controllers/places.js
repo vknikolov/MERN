@@ -75,7 +75,7 @@ const createPlace = async (request, response, next) => {
     );
   }
 
-  const { title, description, address, creator } = request.body;
+  const { title, description, address } = request.body;
   let location;
   try {
     location = await getCordinatesForAddress(address);
@@ -89,20 +89,22 @@ const createPlace = async (request, response, next) => {
     image: request.file.path, // Image path from uploaded file
     address,
     location,
-    creator,
+    creator: request.userData.userId, // Creator userID from authentication middleware
   });
 
   let user;
   // Verify that the creator user exists
   try {
-    user = await User.findById(creator);
+    user = await User.findById(request.userData.userId); // userID from authentication middleware
   } catch (error) {
     return next(new HttpError("Creating place failed, please try again.", 500));
   }
+
   // If user does not exist, return error
   if (!user) {
     return next(new HttpError("Could not find user for provided id.", 404));
   }
+
   // Save the new place to the database
   try {
     // Use a session and transaction to ensure both place creation and user update succeed
@@ -117,6 +119,7 @@ const createPlace = async (request, response, next) => {
   } catch (error) {
     return next(new HttpError("Creating place failed, please try again.", 500));
   }
+
   // Respond with success message
   response
     .status(201)
@@ -133,10 +136,13 @@ const updatePlace = async (request, response, next) => {
       new HttpError("Invalid inputs passed, please check your data.", 422)
     );
   }
+
   // Extract data from request
   const { title, description } = request.body;
+
   // Find place by ID
   const placeID = request.params.placeId;
+
   let place;
   // Fetch place from database
   try {
@@ -146,9 +152,16 @@ const updatePlace = async (request, response, next) => {
       new HttpError("Could not update place, please try again.", 500)
     );
   }
+
+  // Check if the authenticated user is the creator of the place
+  if (place.creator.toString() !== request.userData.userId.toString()) {
+    return next(new HttpError("You are not allowed to edit this place.", 401));
+  }
+
   // Update place details after fetching
   place.title = title;
   place.description = description;
+
   // Save updated place to database
   try {
     await place.save();
@@ -157,6 +170,7 @@ const updatePlace = async (request, response, next) => {
       new HttpError("Could not update place, please try again.", 500)
     );
   }
+
   // Convert Mongoose document to plain JS object
   const updatedPlace = place.toObject({ getters: true });
   response
@@ -184,6 +198,13 @@ const deletePlace = async (request, response, next) => {
   // Check if place exists
   if (!place) {
     return next(new HttpError("Could not find place for this id.", 404));
+  }
+
+  // Check if the authenticated user is the creator of the place
+  if (place.creator.id.toString() !== request.userData.userId.toString()) {
+    return next(
+      new HttpError("You are not allowed to delete this place.", 401)
+    );
   }
 
   // Store image path to delete the file later

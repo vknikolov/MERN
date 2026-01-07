@@ -2,6 +2,8 @@ const { Router } = require("express");
 const { check } = require("express-validator"); // For input validation
 // multer middleware for file upload
 const fileUpload = require("../middleware/file-upload");
+// Authentication middleware
+const authenticate = require("../middleware/authentication");
 // Controllers
 const {
   getPlaceById,
@@ -21,6 +23,9 @@ router.get("/user/:userId", getPlacesByUserId);
 // Place specific route
 router.get("/:placeId", getPlaceById);
 
+// Protect all routes below this middleware -------------------------------
+router.use(authenticate);
+
 // Create new place route
 router.post(
   "/",
@@ -36,10 +41,7 @@ router.post(
 // Update place route
 router.patch(
   "/:placeId",
-  [
-    check("title").not().isEmpty(),
-    check("description").isLength({ min: 5 }),
-  ],
+  [check("title").not().isEmpty(), check("description").isLength({ min: 5 })],
   updatePlace
 );
 

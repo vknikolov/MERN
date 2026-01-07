@@ -70,7 +70,7 @@ const Authentication = () => {
       );
 
       // Log the user in upon successful authentication
-      login(data.user.id); // Assuming the response contains user ID
+      login(data.userId, data.token); // userId and token from response
     } catch (error) {
       // Error is handled in useHttpClient
       console.error(error);

@@ -43,8 +43,8 @@ const initialFormState = {
 };
 
 const NewPlace = () => {
-  // Get userID from AuthenticationContext
-  const { userID } = useContext(AuthenticationContext);
+  // Get userID and token from AuthenticationContext
+  const { token } = useContext(AuthenticationContext);
 
   // useHttpClient for handling HTTP requests
   const { isLoading, error, sendRequest, clearError } = useHttpClient();
@@ -66,11 +66,12 @@ const NewPlace = () => {
       formData.append("title", formState.inputs.title.value);
       formData.append("description", formState.inputs.description.value);
       formData.append("address", formState.inputs.address.value);
-      formData.append("creator", userID); // Append creator userID
       formData.append("image", formState.inputs.image.value);
-      
+
       // Send HTTP request to backend to create a new place
-      await sendRequest("http://localhost:8080/api/places", "POST", formData);
+      await sendRequest("http://localhost:8080/api/places", "POST", formData, {
+        Authorization: "Bearer " + token, // Auth header
+      });
 
       // Redirect to homepage after successful place creation
       history.push("/");
