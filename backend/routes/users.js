@@ -2,7 +2,8 @@ const { Router } = require("express");
 const { check } = require("express-validator");
 // Initialize Router
 const router = Router();
-
+// multer middleware for file upload
+const fileUpload = require("../middleware/file-upload");
 // Controllers
 const { getUsers, signup, login } = require("../controllers/users");
 
@@ -13,6 +14,7 @@ router.get("/", getUsers);
 // User signup route
 router.post(
   "/signup",
+  fileUpload.single("image"), // Middleware to handle single file upload with field name "image"
   [
     check("name").not().isEmpty(),
     check("email").normalizeEmail().isEmail(),

@@ -1,19 +1,23 @@
-require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-
+require("dotenv").config();
 // Routes
 const placesRoutes = require("./routes/places");
 const usersRoutes = require("./routes/users");
 //Helpers
 const HttpError = require("./models/http-error");
+
 // Initialize Express app
 const app = express();
 const PORT = 8080;
-
 // Middleware
 app.use(bodyParser.json());
+
+// Serve static files from the "uploads/images" directory 
+app.use("/uploads/images", express.static(path.join("uploads", "images")));
 
 // CORS headers middleware to allow cross-origin requests
 app.use((request, response, next) => {
@@ -47,6 +51,13 @@ app.use((request, response, next) => {
 
 // ERROR handling middleware
 app.use((error, request, response, next) => {
+  // Delete uploaded file if there was an error during request processing
+  if (request.file) {
+    // If there was an uploaded file, delete it
+    fs.unlink(request.file.path, (error) => {
+      console.error(error);
+    });
+  }
   if (response.headerSent) {
     return next(error);
   }

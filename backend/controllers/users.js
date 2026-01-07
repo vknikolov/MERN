@@ -54,8 +54,7 @@ const signup = async (request, response, next) => {
   const newUser = new User({
     name,
     email,
-    image:
-      "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1587&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    image: request.file.path, // Image path from uploaded file
     password, // todo : Hash password
     places: [],
   });
@@ -104,12 +103,10 @@ const login = async (request, response, next) => {
   }
 
   // Handle user login logic here
-  response
-    .status(200)
-    .json({
-      message: "User logged in successfully!",
-      user: existingUser.toObject({ getters: true }), // Convert Mongoose document to plain JS object and getters remove the _id field
-    });
+  response.status(200).json({
+    message: "User logged in successfully!",
+    user: existingUser.toObject({ getters: true }), // Convert Mongoose document to plain JS object and getters remove the _id field
+  });
 };
 
 // Export controller functions

@@ -5,6 +5,7 @@ import Input from "../../shared/components/form-elements/input/Input.js";
 import Button from "../../shared/components/form-elements/button/Button.js";
 import ErrorModal from "../../shared/components/ui-elements/error-modal/ErrorModal.js";
 import LoadingSpinner from "../../shared/components/ui-elements/spinner/LoadingSpinner.js";
+import ImageUpload from "../../shared/components/form-elements/image-upload/ImageUpload.js";
 // Hooks
 import { useFormReducer } from "../../helpers/custom-hooks/useFormReducer.js";
 import { useHttpClient } from "../../helpers/custom-hooks/http.js";
@@ -27,6 +28,14 @@ const initialFormState = {
     },
     description: {
       value: "",
+      isValid: false,
+    },
+    address: {
+      value: "",
+      isValid: false,
+    },
+    image: {
+      value: null,
       isValid: false,
     },
   },
@@ -52,17 +61,16 @@ const NewPlace = () => {
   const placeSubmitHandler = async (event) => {
     event.preventDefault();
     try {
-      await sendRequest(
-        "http://localhost:8080/api/places",
-        "POST",
-        JSON.stringify({
-          title: formState.inputs.title.value,
-          description: formState.inputs.description.value,
-          address: formState.inputs.address.value,
-          creator: userID,
-        }),
-        { "Content-Type": "application/json" }
-      );
+      // Create form data for the new place
+      const formData = new FormData();
+      formData.append("title", formState.inputs.title.value);
+      formData.append("description", formState.inputs.description.value);
+      formData.append("address", formState.inputs.address.value);
+      formData.append("creator", userID); // Append creator userID
+      formData.append("image", formState.inputs.image.value);
+      
+      // Send HTTP request to backend to create a new place
+      await sendRequest("http://localhost:8080/api/places", "POST", formData);
 
       // Redirect to homepage after successful place creation
       history.push("/");
@@ -85,6 +93,7 @@ const NewPlace = () => {
           errorText="Please enter a valid title."
           onInput={inputHandler}
         />
+
         <Input
           type="textarea"
           placeholder="Description"
@@ -103,6 +112,13 @@ const NewPlace = () => {
           validators={[VALIDATOR_REQUIRE()]}
           errorText="Please enter a valid address."
           onInput={inputHandler}
+        />
+
+        <ImageUpload
+          id="image"
+          center
+          onInput={inputHandler}
+          errorText="Please provide an image."
         />
 
         <Button type="submit" disabled={!formState.isValid}>

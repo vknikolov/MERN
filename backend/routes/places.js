@@ -1,5 +1,7 @@
 const { Router } = require("express");
 const { check } = require("express-validator"); // For input validation
+// multer middleware for file upload
+const fileUpload = require("../middleware/file-upload");
 // Controllers
 const {
   getPlaceById,
@@ -22,6 +24,7 @@ router.get("/:placeId", getPlaceById);
 // Create new place route
 router.post(
   "/",
+  fileUpload.single("image"), // Middleware to handle single file upload with field name "image"
   [
     check("title").not().isEmpty(),
     check("description").isLength({ min: 5 }),

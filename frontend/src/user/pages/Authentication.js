@@ -5,6 +5,7 @@ import Button from "../../shared/components/form-elements/button/Button";
 import Input from "../../shared/components/form-elements/input/Input";
 import ErrorModal from "../../shared/components/ui-elements/error-modal/ErrorModal";
 import LoadingSpinner from "../../shared/components/ui-elements/spinner/LoadingSpinner";
+import ImageUpload from "../../shared/components/form-elements/image-upload/ImageUpload.js";
 // Context
 import { AuthenticationContext } from "../../shared/context/authentication-context.js";
 // Validators
@@ -38,27 +39,34 @@ const Authentication = () => {
   // Form submission handler
   const authSubmitHandler = async (event) => {
     event.preventDefault();
+    console.log(formState.inputs);
     const urlMode = isLoginMode ? "login" : "signup";
-    const bodyMode = isLoginMode
-      ? {
+    const JSONData = isLoginMode
+      ? JSON.stringify({
           email: formState.inputs.email.value,
           password: formState.inputs.password.value,
-        }
-      : {
-          name: formState.inputs.name.value,
-          email: formState.inputs.email.value,
-          password: formState.inputs.password.value,
-        };
+        })
+      : null; // Body is not used for signup as we use FormData
+    const headersMode = isLoginMode
+      ? { "Content-Type": "application/json" }
+      : {};
 
     try {
+      // Create form data for signup with image
+      const formData = new FormData();
+      if (!isLoginMode) {
+        formData.append("email", formState.inputs.email.value);
+        formData.append("password", formState.inputs.password.value);
+        formData.append("name", formState.inputs.name.value);
+        formData.append("image", formState.inputs.image.value);
+      }
+
       // Send HTTP request to backend
       const data = await sendRequest(
         `http://localhost:8080/api/users/${urlMode}`,
         "POST",
-        JSON.stringify(bodyMode),
-        {
-          "Content-Type": "application/json",
-        }
+        isLoginMode ? JSONData : formData,
+        headersMode
       );
 
       // Log the user in upon successful authentication
@@ -79,6 +87,7 @@ const Authentication = () => {
         {
           ...formState.inputs, // Keep existing inputs
           name: undefined, // Remove name input
+          image: undefined, // Remove image input
         },
         formState.inputs.email.isValid && formState.inputs.password.isValid // Update form validity
       );
@@ -89,6 +98,7 @@ const Authentication = () => {
         {
           ...formState.inputs, // Keep existing inputs
           name: { value: "", isValid: false }, // Add name input
+          image: { value: null, isValid: false }, // Add image input
         },
         false // Form is invalid initially
       );
@@ -123,6 +133,16 @@ const Authentication = () => {
               }
             />
           )}
+
+          {!isLoginMode && (
+            <ImageUpload
+              id="image"
+              center
+              onInput={inputHandler}
+              errorText="Please provide an image."
+            />
+          )}
+
           <Input
             id="email"
             element="input"

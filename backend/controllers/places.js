@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+// External modules
 const { validationResult } = require("express-validator");
 const mongoose = require("mongoose");
 // Helpers
@@ -7,50 +10,6 @@ const getCordinatesForAddress = require("../util/location");
 // mongoose model
 const Place = require("../models/place");
 const User = require("../models/user");
-
-// Dummy data
-let DUMMY_PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "One of the most famous sky scrapers in the world!",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/d/da/At_New_York_City_2023_031_-_Empire_State_Building_seen_from_the_High_Line.jpg",
-    address: "20 W 34th St, New York, NY 10001, United States",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    creatorId: "u1",
-  },
-  {
-    id: "p2",
-    title: "Statue of Liberty",
-    description: "Famous colossal neoclassical sculpture on Liberty Island.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/8/8d/Statue_of_Liberty_Annular_Solar_Eclipse_%2851239095574%29.jpg",
-    address: "Liberty Island, New York, NY 10004, United States",
-    location: {
-      lat: 40.6892494,
-      lng: -74.0445004,
-    },
-    creatorId: "u2",
-  },
-  {
-    id: "p3",
-    title: "Central Park",
-    description:
-      "An urban park in New York City located between the Upper West and Upper East Sides of Manhattan.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/e/e6/Central_Park_New_York_City_New_York_23_crop.jpg",
-    address: "New York, NY, United States",
-    location: {
-      lat: 40.785091,
-      lng: -73.968285,
-    },
-    creatorId: "u1",
-  },
-];
 
 // Controller functions for places
 const getPlacesByUserId = async (request, response, next) => {
@@ -127,8 +86,7 @@ const createPlace = async (request, response, next) => {
   const createdPlace = new Place({
     title,
     description,
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/d/da/At_New_York_City_2023_031_-_Empire_State_Building_seen_from_the_High_Line.jpg",
+    image: request.file.path, // Image path from uploaded file
     address,
     location,
     creator,
@@ -227,6 +185,10 @@ const deletePlace = async (request, response, next) => {
   if (!place) {
     return next(new HttpError("Could not find place for this id.", 404));
   }
+
+  // Store image path to delete the file later
+  const imagePath = place.image;
+
   // Delete place from database
   try {
     // Use a session and transaction to ensure both place deletion and user update succeed
@@ -241,6 +203,14 @@ const deletePlace = async (request, response, next) => {
       new HttpError("Could not delete place, please try again.", 500)
     );
   }
+
+  // Delete the image file associated with the place
+  fs.unlink(imagePath, (error) => {
+    if (error) {
+      console.error("Failed to delete image file:", error);
+    }
+  });
+
   // Respond with success message
   response.status(200).json({ message: "DELETE /places/ endpoint reached" });
 };
